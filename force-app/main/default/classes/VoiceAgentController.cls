@@ -39,13 +39,26 @@ public with sharing class VoiceAgentController {
             response.put('conversationHistory', conversationHistory);
             
             // Step 4: Convert AI response to speech using ElevenLabs
-            String audioResponse = VoiceAgentService.textToSpeech(aiResponse, null);
-            response.put('audioResponse', audioResponse);
+            // Make TTS failure non-fatal - conversation should continue even if audio generation fails
+            try {
+                String audioResponse = VoiceAgentService.textToSpeech(aiResponse, null);
+                response.put('audioResponse', audioResponse);
+                response.put('audioError', null);
+            } catch (Exception ttsException) {
+                // Log TTS error but don't fail the entire conversation
+                response.put('audioResponse', null);
+                response.put('audioError', 'Text-to-speech failed: ' + ttsException.getMessage());
+            }
             
             response.put('success', true);
         } catch (Exception e) {
+            // Only fail if core conversation processing fails
             response.put('success', false);
             response.put('error', e.getMessage());
+            // Still return conversation history if we got this far
+            if (conversationHistory != null) {
+                response.put('conversationHistory', conversationHistory);
+            }
         }
         
         return response;

@@ -110,13 +110,21 @@ export default class VoiceAgent extends LightningElement {
             
             if (result.success) {
                 this.currentResponse = result.aiResponse || '';
+                // Always update conversation history when conversation succeeds
+                // even if audio generation failed
                 this.conversationHistory = result.conversationHistory || [];
                 
                 // Play audio response if available
                 if (result.audioResponse) {
                     this.playAudioResponse(result.audioResponse);
+                } else if (result.audioError) {
+                    // Show warning if audio failed but conversation succeeded
+                    console.warn('Audio generation failed:', result.audioError);
+                    this.showToast('Audio Unavailable', 'Conversation succeeded but audio playback is unavailable. ' + result.audioError, 'warning');
                 }
             } else {
+                // If conversation failed, try to preserve existing history
+                // but don't update it with partial data
                 throw new Error(result.error || 'Unknown error occurred');
             }
         } catch (error) {
