@@ -1,0 +1,36 @@
+.recording-indicator {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.conversation-container {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0.5rem;
+    border: 1px solid #d8dde6;
+    border-radius: 0.25rem;
+    background-color: #fafaf9;
+}
+
+.user-message {
+    background-color: #e3f2fd;
+    border-left: 4px solid #2196f3;
+}
+
+.assistant-message {
+    background-color: #f1f8e9;
+    border-left: 4px solid #8bc34a;
+}
+
+.slds-box {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+}

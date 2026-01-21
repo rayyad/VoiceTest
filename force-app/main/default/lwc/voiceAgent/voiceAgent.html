@@ -1,0 +1,108 @@
+<template>
+    <lightning-card title="Voice Agent" icon-name="utility:voice_call">
+        <div class="slds-p-around_medium">
+            <!-- Recording Controls -->
+            <div class="slds-grid slds-grid_align-center slds-m-bottom_medium">
+                <template if:true={isRecording}>
+                    <lightning-button
+                        label="Stop Recording"
+                        variant="destructive"
+                        icon-name="utility:stop"
+                        onclick={stopRecording}
+                        class="slds-m-right_small">
+                    </lightning-button>
+                    <div class="slds-m-left_small">
+                        <lightning-icon icon-name="utility:record" size="small" class="recording-indicator"></lightning-icon>
+                        <span class="slds-text-color_error">Recording...</span>
+                    </div>
+                </template>
+                <template if:false={isRecording}>
+                    <lightning-button
+                        label="Start Recording"
+                        variant="brand"
+                        icon-name="utility:mic"
+                        onclick={startRecording}
+                        disabled={isProcessing}>
+                    </lightning-button>
+                </template>
+            </div>
+
+            <!-- Processing Indicator -->
+            <template if:true={isProcessing}>
+                <div class="slds-align_absolute-center slds-m-vertical_medium">
+                    <lightning-spinner alternative-text="Processing" size="medium"></lightning-spinner>
+                    <p class="slds-text-align_center slds-m-top_small">Processing your voice...</p>
+                </div>
+            </template>
+
+            <!-- Current Transcription -->
+            <template if:true={currentTranscription}>
+                <div class="slds-box slds-theme_info slds-m-bottom_small">
+                    <h3 class="slds-text-heading_small slds-m-bottom_x-small">You said:</h3>
+                    <p>{currentTranscription}</p>
+                </div>
+            </template>
+
+            <!-- Current Response -->
+            <template if:true={currentResponse}>
+                <div class="slds-box slds-theme_success slds-m-bottom_small">
+                    <h3 class="slds-text-heading_small slds-m-bottom_x-small">Agent responded:</h3>
+                    <p>{currentResponse}</p>
+                </div>
+            </template>
+
+            <!-- Conversation History -->
+            <template if:true={hasConversation}>
+                <div class="slds-m-top_medium">
+                    <h3 class="slds-text-heading_medium slds-m-bottom_small">Conversation History</h3>
+                    <div class="conversation-container">
+                        <template for:each={formattedConversation} for:item="message">
+                            <div key={message.id} class="slds-m-bottom_small">
+                                <div class={message.isUser ? "slds-box slds-theme_default user-message" : "slds-box slds-theme_shade assistant-message"}>
+                                    <div class="slds-grid slds-grid_align-spread">
+                                        <div>
+                                            <strong>{message.isUser ? "You" : "Agent"}:</strong>
+                                        </div>
+                                        <div class="slds-text-color_weak slds-text-body_small">
+                                            {message.timestamp}
+                                        </div>
+                                    </div>
+                                    <p class="slds-m-top_x-small">{message.text}</p>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Action Buttons -->
+            <div class="slds-grid slds-grid_align-spread slds-m-top_medium">
+                <lightning-button
+                    label="Save Conversation"
+                    variant="brand"
+                    icon-name="utility:save"
+                    onclick={saveConversation}
+                    disabled={isProcessing || !hasConversation}>
+                </lightning-button>
+                <lightning-button
+                    label="Clear Conversation"
+                    variant="neutral"
+                    icon-name="utility:clear"
+                    onclick={clearConversation}
+                    disabled={isProcessing || !hasConversation}>
+                </lightning-button>
+            </div>
+
+            <!-- Instructions -->
+            <div class="slds-m-top_medium slds-box slds-theme_shade">
+                <h3 class="slds-text-heading_small slds-m-bottom_x-small">Instructions</h3>
+                <ul class="slds-list_dotted">
+                    <li>Click "Start Recording" to begin speaking</li>
+                    <li>Click "Stop Recording" when finished</li>
+                    <li>The agent will process your voice and respond</li>
+                    <li>Click "Save Conversation" to store the summary in account notes</li>
+                </ul>
+            </div>
+        </div>
+    </lightning-card>
+</template>
