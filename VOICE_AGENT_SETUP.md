@@ -5,9 +5,9 @@ This Salesforce Voice Agent integrates with ElevenLabs API to provide voice-to-v
 ## Components Created
 
 ### Apex Classes
-1. **VoiceAgentService.cls** - Handles ElevenLabs API integration for speech-to-text and text-to-speech
-2. **VoiceAgentController.cls** - Main controller for the Lightning Web Component
-3. **AccountNoteService.cls** - Manages creating and retrieving notes on Accounts
+1. **VoiceAgentService.cls** - Handles ElevenLabs API integration for text-to-speech (speech-to-text is handled client-side)
+2. **VoiceAgentController.cls** - Main controller for the Lightning Web Component, handles conversation flow and error handling
+3. **AccountNoteService.cls** - Manages creating and retrieving ContentNote objects on Accounts
 
 ### Lightning Web Component
 - **voiceAgent** - User interface for voice interaction
@@ -96,9 +96,16 @@ sfdx force:source:deploy -p force-app/main/default/lwc/voiceAgent
 ### 5. Grant Permissions
 
 Ensure your users have access to:
-- The Apex classes (via Profile or Permission Set)
-- ContentNote and ContentDocumentLink objects
-- Account object (read/write)
+- The Apex classes (via Profile or Permission Set):
+  - `VoiceAgentService`
+  - `VoiceAgentController`
+  - `AccountNoteService`
+- Objects (via Profile or Permission Set):
+  - `ContentNote` (read/create)
+  - `ContentVersion` (read)
+  - `ContentDocumentLink` (read/create)
+  - `Account` (read/write)
+- Field-level security for Account fields (Name, Industry, Type)
 
 ## Usage
 
@@ -112,28 +119,42 @@ Ensure your users have access to:
 ## Features
 
 - **Voice Input**: Record audio directly from the browser using Web Speech API
-- **Speech-to-Text**: Converts your speech to text using browser's built-in Web Speech API (no API key needed)
-- **AI Response**: Processes conversation and generates responses
-- **Text-to-Speech**: Converts AI responses back to audio using ElevenLabs
-- **Conversation History**: View the full conversation
-- **Auto-Save**: Save conversation summaries as notes on the Account
+- **Speech-to-Text**: Converts your speech to text using browser's built-in Web Speech API (no API key needed, works offline)
+- **AI Response**: Processes conversation and generates responses with account context
+- **Text-to-Speech**: Converts AI responses back to audio using ElevenLabs (optional - conversation continues even if TTS fails)
+- **Conversation History**: View the full conversation with user and assistant messages
+- **Resilient Error Handling**: Conversation context is preserved even if audio generation fails
+- **Auto-Save**: Save conversation summaries as ContentNote objects on the Account
 
 ## Important Notes
 
-1. **ElevenLabs API Endpoints**: The current implementation uses placeholder endpoints. You may need to adjust the API endpoints based on ElevenLabs' actual API documentation.
+1. **ElevenLabs API**: The implementation uses ElevenLabs text-to-speech API. The API key is optional - if not configured, conversations will still work but without audio playback. Users will see a warning message.
 
 2. **AI Integration**: The `processConversation` method currently uses a simple echo response. For production, integrate with:
    - OpenAI GPT API
-   - Salesforce Einstein
+   - Salesforce Einstein GPT
    - Other AI services
 
 3. **Browser Support**: Web Speech API is supported in Chrome, Edge, and Safari. Firefox support is limited.
 
-4. **Browser Permissions**: Users will need to grant microphone permissions when first using the component.
+4. **Browser Permissions**: Users will need to grant microphone permissions when first using the component. HTTPS is required for microphone access.
 
-5. **Speech Recognition**: Uses browser's built-in Web Speech API for speech-to-text (no additional API setup required).
+5. **Speech Recognition**: Uses browser's built-in Web Speech API for speech-to-text (no additional API setup required, works offline).
 
-5. **ContentNote**: Notes are stored as ContentNote objects, which are the modern way to store notes in Salesforce.
+6. **ContentNote Implementation**: Notes are stored as ContentNote objects (which extend ContentVersion). The implementation correctly queries ContentVersion to get ContentDocumentId for linking notes to Accounts.
+
+7. **Error Handling**: 
+   - Text-to-speech failures are non-fatal - conversations continue even if audio generation fails
+   - Conversation history is always preserved, even if audio fails
+   - Users will see a warning toast if audio is unavailable but conversation succeeded
+
+## Recent Updates & Bug Fixes
+
+### Version Updates
+- **TTS Failure Handling**: Text-to-speech failures are now non-fatal. Conversations continue even if ElevenLabs API is unavailable or misconfigured.
+- **Conversation History Preservation**: Fixed bug where conversation history was lost if audio generation failed. History is now always preserved.
+- **ContentNote Implementation**: Fixed ContentNote linking by correctly querying ContentVersion for ContentDocumentId.
+- **Error Messages**: Improved error handling with user-friendly warnings for audio failures.
 
 ## Troubleshooting
 
@@ -142,20 +163,56 @@ Ensure your users have access to:
 - Ensure HTTPS is used (required for microphone access)
 - Try a different browser
 
-### API Errors
-- Verify your API key is correct
+### API Errors (ElevenLabs)
+- **Conversation still works**: If the ElevenLabs API key is missing or invalid, the conversation will continue without audio playback
+- Verify your API key is correct in Named Credential/Custom Metadata
 - Check Named Credential/Custom Metadata configuration
 - Review Salesforce debug logs for detailed error messages
+- Users will see a warning message if audio generation fails
 
 ### Notes Not Saving
-- Verify user has access to ContentNote and ContentDocumentLink
-- Check Account record permissions
+- Verify user has access to ContentNote, ContentVersion, and ContentDocumentLink objects
+- Check Account record permissions (read/write)
+- Ensure ContentNote is enabled in your org (available in most orgs by default)
 - Review debug logs for errors
+- Note: The implementation correctly uses ContentVersion to get ContentDocumentId for linking
+
+### Conversation History Lost
+- This has been fixed! Conversation history is now preserved even if audio generation fails
+- If you experience issues, check browser console for errors
+- Ensure the component has proper error handling (already implemented)
+
+## Architecture & Implementation Details
+
+### Conversation Flow
+1. User speaks → Browser Web Speech API transcribes to text (client-side)
+2. Transcribed text sent to `VoiceAgentController.processVoiceInput()`
+3. User message added to conversation history
+4. AI processes conversation and generates response
+5. AI response added to conversation history
+6. Text-to-speech conversion attempted (non-blocking)
+7. Response returned to client with conversation history and optional audio
+
+### Error Handling
+- **TTS Failures**: Wrapped in try-catch, don't fail the conversation
+- **Conversation History**: Always preserved and returned, even on partial failures
+- **Client-Side**: Shows warnings for audio failures but continues conversation
+
+### ContentNote Implementation
+- Uses `ContentNote` object (extends `ContentVersion`)
+- After insert, queries `ContentVersion` to get `ContentDocumentId`
+- Creates `ContentDocumentLink` to associate note with Account
+- Returns `ContentDocumentId` for reference
 
 ## Next Steps
 
-1. Integrate with a real AI service for intelligent responses
-2. Add support for multiple languages
-3. Add voice selection options
-4. Implement conversation context awareness
-5. Add analytics and reporting
+1. **Integrate with real AI service** for intelligent responses:
+   - OpenAI GPT API
+   - Salesforce Einstein GPT
+   - Anthropic Claude API
+2. Add support for multiple languages in speech recognition
+3. Add voice selection options for ElevenLabs TTS
+4. Implement conversation context awareness and memory
+5. Add analytics and reporting on conversation metrics
+6. Add support for custom voice models
+7. Implement conversation export functionality
