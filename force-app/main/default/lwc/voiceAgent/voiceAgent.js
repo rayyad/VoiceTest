@@ -199,6 +199,13 @@ export default class VoiceAgent extends LightningElement {
     }
     
     /**
+     * Check if buttons should be disabled
+     */
+    get shouldDisableButtons() {
+        return this.isProcessing || !this.hasConversation;
+    }
+    
+    /**
      * Get formatted conversation for display
      */
     get formattedConversation() {
@@ -207,12 +214,24 @@ export default class VoiceAgent extends LightningElement {
         }
         
         return this.conversationHistory.map((msg, index) => {
+            const isUser = msg.role === 'user';
+            const isAssistant = msg.role === 'assistant';
+            let messageClass = 'slds-box ';
+            if (isUser) {
+                messageClass += 'slds-theme_default user-message';
+            } else {
+                messageClass += 'slds-theme_shade assistant-message';
+            }
+            
             return {
                 id: index,
                 role: msg.role,
                 text: msg.text,
-                isUser: msg.role === 'user',
-                isAssistant: msg.role === 'assistant'
+                isUser: isUser,
+                isAssistant: isAssistant,
+                messageClass: messageClass,
+                senderLabel: isUser ? 'You' : 'Agent',
+                timestamp: msg.timestamp || ''
             };
         });
     }

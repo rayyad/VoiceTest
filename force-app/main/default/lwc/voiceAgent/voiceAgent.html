@@ -58,10 +58,10 @@
                     <div class="conversation-container">
                         <template for:each={formattedConversation} for:item="message">
                             <div key={message.id} class="slds-m-bottom_small">
-                                <div class={message.isUser ? "slds-box slds-theme_default user-message" : "slds-box slds-theme_shade assistant-message"}>
+                                <div class={message.messageClass}>
                                     <div class="slds-grid slds-grid_align-spread">
                                         <div>
-                                            <strong>{message.isUser ? "You" : "Agent"}:</strong>
+                                            <strong>{message.senderLabel}:</strong>
                                         </div>
                                         <div class="slds-text-color_weak slds-text-body_small">
                                             {message.timestamp}
@@ -82,14 +82,14 @@
                     variant="brand"
                     icon-name="utility:save"
                     onclick={saveConversation}
-                    disabled={isProcessing || !hasConversation}>
+                    disabled={shouldDisableButtons}>
                 </lightning-button>
                 <lightning-button
                     label="Clear Conversation"
                     variant="neutral"
                     icon-name="utility:clear"
                     onclick={clearConversation}
-                    disabled={isProcessing || !hasConversation}>
+                    disabled={shouldDisableButtons}>
                 </lightning-button>
             </div>
 
