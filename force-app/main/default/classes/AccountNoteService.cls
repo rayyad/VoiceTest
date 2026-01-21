@@ -23,16 +23,19 @@ public with sharing class AccountNoteService {
             
             insert note;
             
+            // Query to get the ContentDocumentId from the ContentNote
+            ContentNote insertedNote = [SELECT Id, ContentDocumentId FROM ContentNote WHERE Id = :note.Id LIMIT 1];
+            
             // Link the note to the Account using ContentDocumentLink
             ContentDocumentLink link = new ContentDocumentLink();
             link.LinkedEntityId = accountId;
-            link.ContentDocumentId = note.Id;
+            link.ContentDocumentId = insertedNote.ContentDocumentId;
             link.ShareType = 'V'; // Viewer access
             link.Visibility = 'AllUsers';
             
             insert link;
             
-            return note.Id;
+            return insertedNote.ContentDocumentId;
         } catch (Exception e) {
             throw new AuraHandledException('Error creating account note: ' + e.getMessage());
         }
